@@ -57,3 +57,19 @@ export function annuity(P: number, annualRate: number, n: number): number {
   if (r === 0) return P / n
   return (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
 }
+
+export function computePayments(inputs: SimulationInputs): PaymentRow[] {
+  const currentPayment = annuity(
+    inputs.loanAmount,
+    EURIBOR_RATES[inputs.currentTenor] + inputs.marginDecimal,
+    inputs.termMonths,
+  )
+
+  return TENOR_ORDER.map(tenor => {
+    const rate = EURIBOR_RATES[tenor] + inputs.marginDecimal
+    const monthlyPayment = annuity(inputs.loanAmount, rate, inputs.termMonths)
+    const annualCost = monthlyPayment * 12
+    const diffMonthly = tenor === inputs.currentTenor ? 0 : monthlyPayment - currentPayment
+    return { tenor, rate, monthlyPayment, annualCost, diffMonthly, diffAnnual: diffMonthly * 12 }
+  })
+}
