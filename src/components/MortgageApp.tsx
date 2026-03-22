@@ -44,11 +44,26 @@ const RATE_LABELS = {
   rate12m: '12m Euribor',
 };
 type RateKey = keyof typeof RATE_COLORS;
+const RATE_SERIES_ORDER: RateKey[] = ['rate3m', 'rate6m', 'rate12m'];
 
 // ─── Tooltip ────────────────────────────────────────────────────────────────────
 
 function RateTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
+  const entries = (
+    payload as unknown as {
+      dataKey: string;
+      value: number;
+      color: string;
+    }[]
+  )
+    .slice()
+    .sort(
+      (a, b) =>
+        RATE_SERIES_ORDER.indexOf(a.dataKey as RateKey) -
+        RATE_SERIES_ORDER.indexOf(b.dataKey as RateKey),
+    );
+
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm space-y-1 min-w-[160px]">
       <p className="font-medium text-foreground mb-2">
@@ -56,13 +71,7 @@ function RateTooltip({ active, payload, label }: TooltipContentProps) {
           ? 'Now'
           : `Month ${Math.round(label as number)}`}
       </p>
-      {(
-        payload as unknown as {
-          dataKey: string;
-          value: number;
-          color: string;
-        }[]
-      ).map((e) => (
+      {entries.map((e) => (
         <div key={e.dataKey} className="flex items-center gap-2">
           <span
             className="inline-block size-2 rounded-full shrink-0"
@@ -74,6 +83,22 @@ function RateTooltip({ active, payload, label }: TooltipContentProps) {
           <span className="font-medium ml-auto pl-4">
             {e.value.toFixed(3)}%
           </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RateLegend() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-2 text-xs">
+      {RATE_SERIES_ORDER.map((key) => (
+        <div key={key} className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-2 rounded-full shrink-0"
+            style={{ background: RATE_COLORS[key] }}
+          />
+          <span className="text-muted-foreground">{RATE_LABELS[key]}</span>
         </div>
       ))}
     </div>
@@ -288,7 +313,7 @@ export function MortgageApp() {
                   domain={['auto', 'auto']}
                 />
                 <Tooltip content={RateTooltip} />
-                {(['rate3m', 'rate6m', 'rate12m'] as RateKey[]).map((key) => (
+                {RATE_SERIES_ORDER.map((key) => (
                   <Line
                     key={key}
                     type="monotone"
@@ -301,9 +326,7 @@ export function MortgageApp() {
                   />
                 ))}
                 <Legend
-                  formatter={(v) => RATE_LABELS[v as RateKey] ?? v}
-                  iconType="circle"
-                  iconSize={8}
+                  content={<RateLegend />}
                   wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                 />
               </LineChart>

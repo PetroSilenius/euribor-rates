@@ -38,6 +38,7 @@ const LABELS = {
 };
 
 type Key = keyof typeof COLORS;
+const SERIES_ORDER: Key[] = ['rate3m', 'rate6m', 'rate12m'];
 
 const PERIODS: Period[] = ['3M', '6M', '1Y', '2Y', '5Y'];
 
@@ -63,18 +64,26 @@ function fmtFull(date: string): string {
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
+  const entries = (
+    payload as unknown as {
+      dataKey: string;
+      value: number;
+      color: string;
+    }[]
+  )
+    .slice()
+    .sort(
+      (a, b) =>
+        SERIES_ORDER.indexOf(a.dataKey as Key) -
+        SERIES_ORDER.indexOf(b.dataKey as Key),
+    );
+
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm space-y-1">
       <p className="font-medium text-foreground mb-2">
         {fmtFull(label as string)}
       </p>
-      {(
-        payload as unknown as {
-          dataKey: string;
-          value: number;
-          color: string;
-        }[]
-      ).map((entry) => (
+      {entries.map((entry) => (
         <div key={entry.dataKey} className="flex items-center gap-2">
           <span
             className="inline-block size-2 rounded-full shrink-0"
@@ -92,8 +101,20 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   );
 }
 
-function legendFormatter(value: string) {
-  return LABELS[value as Key] ?? value;
+function ChartLegend() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-2 text-xs">
+      {SERIES_ORDER.map((key) => (
+        <div key={key} className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-2 rounded-full shrink-0"
+            style={{ background: COLORS[key] }}
+          />
+          <span className="text-muted-foreground">{LABELS[key]}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function HistoricalRates() {
@@ -146,7 +167,7 @@ export function HistoricalRates() {
         {/* Latest rate badges */}
         {latest && (
           <div className="flex flex-wrap gap-4 mb-4">
-            {(['rate3m', 'rate6m', 'rate12m'] as Key[]).map((key, i) => {
+            {SERIES_ORDER.map((key, i) => {
               const val = latest[key];
               return (
                 <div key={key} className="flex items-center gap-1.5">
@@ -215,7 +236,7 @@ export function HistoricalRates() {
                   domain={['auto', 'auto']}
                 />
                 <Tooltip content={CustomTooltip} />
-                {(['rate3m', 'rate6m', 'rate12m'] as Key[]).map((key) => (
+                {SERIES_ORDER.map((key) => (
                   <Line
                     key={key}
                     type="monotone"
@@ -229,9 +250,7 @@ export function HistoricalRates() {
                   />
                 ))}
                 <Legend
-                  formatter={legendFormatter}
-                  iconType="circle"
-                  iconSize={8}
+                  content={<ChartLegend />}
                   wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                 />
               </LineChart>

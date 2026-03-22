@@ -32,6 +32,7 @@ const LABELS = {
 };
 
 type Key = keyof typeof COLORS;
+const SERIES_ORDER: Key[] = ['payment3m', 'payment6m', 'payment12m'];
 
 const TENOR_KEY: Record<3 | 6 | 12, Key> = {
   3: 'payment3m',
@@ -41,18 +42,26 @@ const TENOR_KEY: Record<3 | 6 | 12, Key> = {
 
 function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
+  const entries = (
+    payload as unknown as {
+      dataKey: string;
+      value: number;
+      color: string;
+    }[]
+  )
+    .slice()
+    .sort(
+      (a, b) =>
+        SERIES_ORDER.indexOf(a.dataKey as Key) -
+        SERIES_ORDER.indexOf(b.dataKey as Key),
+    );
+
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm space-y-1">
       <p className="font-medium text-foreground mb-2">
         {label === 0 ? 'Today' : `Month ${label}`}
       </p>
-      {(
-        payload as unknown as {
-          dataKey: string;
-          value: number;
-          color: string;
-        }[]
-      ).map((entry) => (
+      {entries.map((entry) => (
         <div key={entry.dataKey} className="flex items-center gap-2">
           <span
             className="inline-block size-2 rounded-full shrink-0"
@@ -70,8 +79,20 @@ function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   );
 }
 
-function legendFormatter(value: string) {
-  return LABELS[value as Key] ?? value;
+function ChartLegend() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-2 text-xs">
+      {SERIES_ORDER.map((key) => (
+        <div key={key} className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-2 rounded-full shrink-0"
+            style={{ background: COLORS[key] }}
+          />
+          <span className="text-muted-foreground">{LABELS[key]}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function EuriborChart({ data, activeTenor, nextResetMonth }: Props) {
@@ -81,7 +102,7 @@ export function EuriborChart({ data, activeTenor, nextResetMonth }: Props) {
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
         <defs>
-          {(Object.keys(COLORS) as Key[]).map((key) => (
+          {SERIES_ORDER.map((key) => (
             <linearGradient
               key={key}
               id={`fill-${key}`}
@@ -146,7 +167,7 @@ export function EuriborChart({ data, activeTenor, nextResetMonth }: Props) {
             />
           )}
 
-        {(Object.keys(COLORS) as Key[]).map((key) => {
+        {SERIES_ORDER.map((key) => {
           const isActive = key === activeKey;
           return (
             <Area
@@ -166,9 +187,7 @@ export function EuriborChart({ data, activeTenor, nextResetMonth }: Props) {
         })}
 
         <Legend
-          formatter={legendFormatter}
-          iconType="circle"
-          iconSize={8}
+          content={<ChartLegend />}
           wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
         />
       </AreaChart>

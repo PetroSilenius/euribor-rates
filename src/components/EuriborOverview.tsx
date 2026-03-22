@@ -33,6 +33,7 @@ const LABELS = {
   rate12m: '12m Euribor',
 };
 type Key = keyof typeof COLORS;
+const SERIES_ORDER: Key[] = ['rate3m', 'rate6m', 'rate12m'];
 const TENOR_KEYS: [Key, string][] = [
   ['rate3m', '3m'],
   ['rate6m', '6m'],
@@ -65,18 +66,26 @@ function fmtFull(date: string): string {
 
 function ChartTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
+  const entries = (
+    payload as unknown as {
+      dataKey: string;
+      value: number;
+      color: string;
+    }[]
+  )
+    .slice()
+    .sort(
+      (a, b) =>
+        SERIES_ORDER.indexOf(a.dataKey as Key) -
+        SERIES_ORDER.indexOf(b.dataKey as Key),
+    );
+
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm space-y-1 min-w-[170px]">
       <p className="font-medium text-foreground mb-2">
         {fmtFull(label as string)}
       </p>
-      {(
-        payload as unknown as {
-          dataKey: string;
-          value: number;
-          color: string;
-        }[]
-      ).map((e) => (
+      {entries.map((e) => (
         <div key={e.dataKey} className="flex items-center gap-2">
           <span
             className="inline-block size-2 rounded-full shrink-0"
@@ -88,6 +97,22 @@ function ChartTooltip({ active, payload, label }: TooltipContentProps) {
           <span className="font-medium ml-auto pl-4">
             {e.value.toFixed(3)}%
           </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ChartLegend() {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-2 text-xs">
+      {SERIES_ORDER.map((key) => (
+        <div key={key} className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-2 rounded-full shrink-0"
+            style={{ background: COLORS[key] }}
+          />
+          <span className="text-muted-foreground">{LABELS[key]}</span>
         </div>
       ))}
     </div>
@@ -298,7 +323,7 @@ export function EuriborOverview() {
                   domain={['auto', 'auto']}
                 />
                 <Tooltip content={ChartTooltip} />
-                {(['rate3m', 'rate6m', 'rate12m'] as Key[]).map((key) => (
+                {SERIES_ORDER.map((key) => (
                   <Line
                     key={key}
                     type="monotone"
@@ -312,9 +337,7 @@ export function EuriborOverview() {
                   />
                 ))}
                 <Legend
-                  formatter={(v) => LABELS[v as Key] ?? v}
-                  iconType="circle"
-                  iconSize={8}
+                  content={<ChartLegend />}
                   wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                 />
               </LineChart>
