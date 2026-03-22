@@ -13,6 +13,8 @@ interface Props {
   switchingFee: number;
   nextResetMonths: string;
   monthlySaving: number;
+  totalSavings: number;
+  savingsHorizonMonths: number;
   breakEvenMonths: number | null;
   cheapestTenor: 3 | 6 | 12;
   ratesLoading: boolean;
@@ -82,6 +84,8 @@ export function LoanParameters({
   switchingFee,
   nextResetMonths,
   monthlySaving,
+  totalSavings,
+  savingsHorizonMonths,
   breakEvenMonths,
   cheapestTenor,
   ratesLoading,
@@ -241,6 +245,12 @@ export function LoanParameters({
                 ) : (
                   'Switching covers the fee immediately.'
                 )}
+                {' '}
+                Total over {savingsHorizonMonths} months:{' '}
+                <span className="font-semibold text-foreground">
+                  {formatEuro(Math.round(totalSavings))}
+                </span>
+                .
               </>
             ) : shouldSwitch && saving <= 0 ? (
               <>
@@ -248,7 +258,12 @@ export function LoanParameters({
                 <span className="font-semibold text-foreground">
                   {formatEuro(Math.abs(saving))}/month
                 </span>{' '}
-                vs switching to {cheapestTenor}m.
+                vs switching to {cheapestTenor}m. Total over{' '}
+                {savingsHorizonMonths} months:{' '}
+                <span className="font-semibold text-foreground">
+                  {formatEuro(Math.round(Math.abs(totalSavings)))}
+                </span>
+                .
               </>
             ) : (
               `${activeTenor}m is already the best-priced euribor rate at current rates.`

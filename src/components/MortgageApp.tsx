@@ -17,7 +17,6 @@ import { ArrowRightIcon } from '@/components/ui/icons';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchEuriborHistory, periodStart } from '@/lib/euriborHistory';
 import {
-  computePayments,
   computeScenario,
   computeSimulatedRates,
   type Scenario,
@@ -137,23 +136,50 @@ export function MortgageApp() {
     [inputs, scenario],
   );
 
-  const { monthlySaving, breakEvenMonths, cheapestTenor } = useMemo(() => {
-    const rows = computePayments(inputs);
-    const cheapest = rows.reduce((best, r) =>
-      r.monthlyPayment < best.monthlyPayment ? r : best,
+  const { monthlySaving, totalSavings, savingsHorizonMonths, breakEvenMonths, cheapestTenor } = useMemo(() => {
+    const tenorPayment = (monthIdx: number, tenor: 3 | 6 | 12) => {
+      const point = chartData[monthIdx];
+      if (tenor === 3) return point?.payment3m ?? 0;
+      if (tenor === 6) return point?.payment6m ?? 0;
+      return point?.payment12m ?? 0;
+    };
+
+    const months = chartData.length;
+    const totalPayment = (tenor: 3 | 6 | 12) =>
+      chartData.reduce((sum, _, monthIdx) => sum + tenorPayment(monthIdx, tenor), 0);
+    const avgPayment = (tenor: 3 | 6 | 12) =>
+      months > 0
+        ? totalPayment(tenor) / months
+        : 0;
+
+    const avgByTenor = {
+      3: avgPayment(3),
+      6: avgPayment(6),
+      12: avgPayment(12),
+    };
+    const totalByTenor = {
+      3: totalPayment(3),
+      6: totalPayment(6),
+      12: totalPayment(12),
+    };
+    const cheapest = ([3, 6, 12] as const).reduce((best, tenor) =>
+      avgByTenor[tenor] < avgByTenor[best] ? tenor : best,
     );
-    const fromPayment =
-      rows.find((r) => r.tenor === activeTenor)?.monthlyPayment ?? 0;
-    const saving = fromPayment - cheapest.monthlyPayment;
+    const fromPayment = avgByTenor[activeTenor];
+    const saving = fromPayment - avgByTenor[cheapest];
+    const cumulativeSaving = totalByTenor[activeTenor] - totalByTenor[cheapest];
+
     return {
       monthlySaving: saving,
+      totalSavings: cumulativeSaving,
+      savingsHorizonMonths: months,
       breakEvenMonths:
-        saving > 0 && cheapest.tenor !== activeTenor
+        saving > 0 && cheapest !== activeTenor
           ? Math.ceil(switchingFee / saving)
           : null,
-      cheapestTenor: cheapest.tenor,
+      cheapestTenor: cheapest,
     };
-  }, [inputs, activeTenor, switchingFee]);
+  }, [chartData, activeTenor, switchingFee]);
 
   const nextResetMonth = nextResetMonths
     ? parseInt(nextResetMonths, 10)
@@ -212,6 +238,8 @@ export function MortgageApp() {
           switchingFee={switchingFee}
           nextResetMonths={nextResetMonths}
           monthlySaving={monthlySaving}
+          totalSavings={totalSavings}
+          savingsHorizonMonths={savingsHorizonMonths}
           breakEvenMonths={breakEvenMonths}
           cheapestTenor={cheapestTenor}
           ratesLoading={liveRates == null}
