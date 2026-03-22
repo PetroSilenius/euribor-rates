@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { annuity, EURIBOR_RATES, computePayments, type SimulationInputs } from './simulation'
+import { annuity, EURIBOR_RATES, computePayments, computeScenario, type SimulationInputs } from './simulation'
 
 describe('EURIBOR_RATES', () => {
   it('has rates for 3m, 6m, 12m', () => {
@@ -72,5 +72,51 @@ describe('computePayments', () => {
     rows.forEach(row => {
       expect(row.diffAnnual).toBeCloseTo(row.diffMonthly * 12, 5)
     })
+  })
+})
+
+describe('computeScenario', () => {
+  const inputs: SimulationInputs = {
+    loanAmount: 200_000,
+    termMonths: 240,
+    marginDecimal: 0.005,
+    currentTenor: 12,
+  }
+
+  it('returns exactly 24 MonthlyPoints', () => {
+    const points = computeScenario(inputs, 'flat')
+    expect(points).toHaveLength(24)
+  })
+
+  it('month indices run 0–23', () => {
+    const points = computeScenario(inputs, 'flat')
+    points.forEach((p, i) => expect(p.month).toBe(i))
+  })
+
+  it('flat scenario: 3m payment same at month 0 and month 3', () => {
+    const points = computeScenario(inputs, 'flat')
+    expect(points[0].payment3m).toBeCloseTo(points[3].payment3m, 1)
+  })
+
+  it('flat scenario: 12m payment same at month 0 and month 11', () => {
+    const points = computeScenario(inputs, 'flat')
+    expect(points[0].payment12m).toBeCloseTo(points[11].payment12m, 1)
+  })
+
+  it('rise scenario: 3m payment at month 3 > month 0 (reset with higher rate)', () => {
+    const points = computeScenario(inputs, 'rise')
+    expect(points[3].payment3m).toBeGreaterThan(points[0].payment3m)
+  })
+
+  it('fall scenario: 3m payment at month 3 < month 0', () => {
+    const points = computeScenario(inputs, 'fall')
+    expect(points[3].payment3m).toBeLessThan(points[0].payment3m)
+  })
+
+  it('short term (12 months): payments after month 11 are 0', () => {
+    const shortInputs = { ...inputs, termMonths: 12 }
+    const points = computeScenario(shortInputs, 'flat')
+    expect(points[12].payment3m).toBe(0)
+    expect(points[23].payment3m).toBe(0)
   })
 })

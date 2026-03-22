@@ -73,3 +73,63 @@ export function computePayments(inputs: SimulationInputs): PaymentRow[] {
     return { tenor, rate, monthlyPayment, annualCost, diffMonthly, diffAnnual: diffMonthly * 12 }
   })
 }
+
+const RESET_SCHEDULES: Record<3 | 6 | 12, number[]> = {
+  3: [0, 3, 6, 9, 12, 15, 18, 21],
+  6: [0, 6, 12, 18],
+  12: [0, 12],
+}
+
+function euriborDelta(scenario: Scenario, month: number): number {
+  const t = Math.min(month, 11) / 11
+  if (scenario === 'flat') return 0
+  if (scenario === 'rise') return t * 0.01
+  return t * -0.005
+}
+
+function tenorRate(tenor: 3 | 6 | 12, month: number, scenario: Scenario, marginDecimal: number): number {
+  return EURIBOR_RATES[tenor] + euriborDelta(scenario, month) + marginDecimal
+}
+
+function computeTenorPoints(
+  tenor: 3 | 6 | 12,
+  inputs: SimulationInputs,
+  scenario: Scenario,
+): number[] {
+  const resets = new Set(RESET_SCHEDULES[tenor])
+  let balance = inputs.loanAmount
+  let remainingMonths = inputs.termMonths
+  let payment = 0
+  const payments: number[] = []
+
+  for (let month = 0; month < 24; month++) {
+    if (remainingMonths <= 0) {
+      payments.push(0)
+      continue
+    }
+    if (resets.has(month)) {
+      payment = annuity(balance, tenorRate(tenor, month, scenario, inputs.marginDecimal), remainingMonths)
+    }
+    payments.push(payment)
+    const rate = tenorRate(tenor, month, scenario, inputs.marginDecimal)
+    const interest = balance * (rate / 12)
+    const principal = payment - interest
+    balance -= principal
+    remainingMonths -= 1
+  }
+
+  return payments
+}
+
+export function computeScenario(inputs: SimulationInputs, scenario: Scenario): MonthlyPoint[] {
+  const points3m = computeTenorPoints(3, inputs, scenario)
+  const points6m = computeTenorPoints(6, inputs, scenario)
+  const points12m = computeTenorPoints(12, inputs, scenario)
+
+  return Array.from({ length: 24 }, (_, month) => ({
+    month,
+    payment3m: points3m[month],
+    payment6m: points6m[month],
+    payment12m: points12m[month],
+  }))
+}
