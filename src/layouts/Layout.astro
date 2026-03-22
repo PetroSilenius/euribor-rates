@@ -1,0 +1,47 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  canonicalPath?: string; // e.g. "/" or "/compare"
+}
+
+const {
+  title = 'Euribor Rates Today — 3m, 6m, 12m',
+  description = 'Current and historical Euribor rates for 3, 6 and 12 month tenors. Daily data from the Bank of Finland.',
+  canonicalPath,
+} = Astro.props;
+
+const siteUrl = 'https://euribor.petrosilenius.com';
+const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : null;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    {canonical && <link rel="canonical" href={canonical} />}
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:site_name" content="Euribor Rates" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+  </head>
+  <body>
+    <div class="min-h-screen bg-background text-foreground flex flex-col">
+      <main class="flex-1">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

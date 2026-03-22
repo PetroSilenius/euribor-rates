@@ -1,0 +1,13 @@
+---
+import { MortgageApp } from '@/components/MortgageApp';
+import Layout from '@/layouts/Layout.astro';
+import '@/styles/global.css';
+---
+
+<Layout
+  canonicalPath="/compare"
+  title="Euribor Tenor Comparison — 3m vs 6m vs 12m Mortgage Calculator"
+  description="Compare 3, 6 and 12 month Euribor mortgage payments over 24 months. See how rates hold, rise or fall affects your monthly payment and when switching tenor pays off."
+>
+  <MortgageApp client:load />
+</Layout>
