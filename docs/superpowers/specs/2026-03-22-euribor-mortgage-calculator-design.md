@@ -146,18 +146,20 @@ At any given month, `tenorRate(tenor, month) = EURIBOR_RATES[tenor] + euriborDel
 
 ```
 balance = inputs.loanAmount
-payment = annuity(balance, tenorRate(tenor, 0), inputs.termMonths)
 remainingMonths = inputs.termMonths
+payment = 0  // initialized below at month 0 reset
 
 For month in 0..23:
+  // month 0 is always a reset point, so payment is set before first use
   if month is a reset point for this tenor (see schedule below):
     payment = annuity(balance, tenorRate(tenor, month), remainingMonths)
   record payment as this month's value
-  // advance balance one month:
+  // advance balance one month (runs every iteration including month 0):
   interest = balance * (tenorRate(tenor, month) / 12)
   principal = payment - interest
   balance -= principal
   remainingMonths -= 1
+  if remainingMonths <= 0: break, fill remaining months with payment=0, balance=0
 ```
 
 Reset schedules:
@@ -176,7 +178,7 @@ Returns exactly 24 `MonthlyPoint` objects (month 0 through 23).
 ### `computeBreakeven(inputs, switchingFee)`
 
 Returns an array of exactly **two** `BreakevenResult` objects, always in this order:
-1. `currentTenor → alternativeA` where alternativeA is the next-shorter tenor, or next-longer if no shorter exists
+1. `currentTenor → alternativeA` where alternativeA is the next-shorter tenor, or next-longer if no shorter tenor exists (i.e. when `currentTenor === 3`)
 2. `currentTenor → alternativeB` where alternativeB is the remaining tenor
 
 Concretely:
@@ -209,13 +211,17 @@ Rules evaluated in strict priority order — first match wins:
 2. **switch**: `rateGap < -0.002` (alternative rate is >0.2 percentage points cheaper) AND `scenario` is `'flat'` or `'fall'`
 3. **marginal**: all remaining cases
 
-**`reason` string format** — use this template, substituting values:
-- stay (cheapest): `"Xm Euribor is already your cheapest option at current rates."`
-- stay (rising): `"Xm could save €Y/month but rates are rising — your 12m lock looks sensible."`
-- switch: `"Xm is Z% cheaper than your current tenor. At flat/falling rates, switching makes sense."`
-- marginal: `"Xm is marginally cheaper (Z%), but the saving is small — depends on your risk tolerance."`
+**`reason` string format** — use these templates, substituting values:
+- stay (cheapest): `"${currentTenor}m Euribor is already your cheapest option at current rates."`
+- stay (rising): `"${cheapestTenor}m could save €${Y}/month but rates are rising — your ${currentTenor}m lock looks sensible."`
+- switch: `"${cheapestTenor}m is ${Z} cheaper than your current tenor. At ${scenarioLabel} rates, switching makes sense."`
+- marginal: `"${cheapestTenor}m is marginally cheaper (${Z}), but the saving is small — depends on your risk tolerance."`
 
-Where `X` = cheapest tenor, `Y` = monthly saving rounded to nearest euro, `Z` = `|rateGap * 100|` formatted to 2 decimal places (e.g. `"0.37%"`).
+Where:
+- `cheapestTenor` = the tenor number of the cheapest alternative (e.g. `3`)
+- `Y` = `Math.abs(Math.round(cheapestAlternativeRow.diffMonthly))` — the monthly saving in whole euros
+- `Z` = `(Math.abs(rateGap) * 100).toFixed(2) + "%"` e.g. `"0.37%"`
+- `scenarioLabel` = `scenario === 'flat' ? 'flat' : 'falling'`
 
 ---
 
@@ -241,11 +247,12 @@ Slider ranges and steps:
 - Margin: min 0.1, max 3.0, step 0.05; displayed as `0.55%`
 - Current tenor: radio-style Tabs (3m / 6m / 12m), not a slider
 
-Each field has both a Slider and a number Input — they stay in sync. The Input accepts the user-facing value (not decimal). Input values are clamped to the same min/max as the slider on blur; values outside range snap to the nearest bound.
+Each field has both a Slider and a number Input — they stay in sync. The Input accepts the user-facing value (not decimal). On blur: numeric values outside range are clamped to the nearest bound; non-numeric or empty input reverts to the last valid value. The `onChange` callback fires only with valid, in-range numbers — never with `NaN`.
 
 ### `RateDisplay`
 ```typescript
-// No props — pure static component. Reads EURIBOR_RATES constant directly.
+// No props — pure static component.
+// Imports EURIBOR_RATES from 'lib/simulation.ts' (the same constant used for math).
 // Renders three shadcn Badges: "3m: 2.15%", "6m: 2.33%", "12m: 2.52%"
 // with a label "as of March 2026".
 ```
@@ -270,6 +277,8 @@ interface BreakevenCardProps {
 ```
 
 Column order matches `results` array order: `results[0]` → left column, `results[1]` → right column.
+
+The switching fee Input has no slider. Min 0, no max, step 1 (whole euros). Non-numeric or negative input reverts to last valid value on blur. When `switchingFee === 0` and `monthlySavings > 0`, `monthsToBreakeven = Math.ceil(0 / monthlySavings) = 0` — display as "Immediate — no payback period." `switchingFee` affects only `computeBreakeven` output; it has no effect on `PaymentTable`, `ScenarioChart`, or `RecommendationBanner`.
 
 ### `PaymentTable`
 ```typescript
@@ -308,7 +317,7 @@ Footer disclaimer
 - Each section: `<h2>` heading + one-line `<p>` subtitle in `text-muted-foreground`
 - Mobile responsive; BreakevenCard two-column on desktop, stacked on mobile
 - Finnish locale formatting throughout (`fi-FI`)
-- PaymentTable: current tenor row highlighted with teal left border; `diffMonthly < 0` (cheaper) in `green-600`, `> 0` (costlier) in `red-500`
+- PaymentTable: current tenor row highlighted with teal left border; `diffMonthly < 0` (cheaper) in `green-600`, `> 0` (costlier) in `red-500`, `=== 0` (current tenor) rendered as a dash (`—`) in neutral color
 - RecommendationBanner: colored left border — `stay` = green, `marginal` = yellow, `switch` = red
 
 ---
