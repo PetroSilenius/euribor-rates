@@ -96,18 +96,18 @@ export function LoanParameters({
   const shouldSwitch = cheapestTenor !== activeTenor;
 
   let badgeClass = 'bg-muted text-muted-foreground';
-  let badgeText = 'All tenors comparable';
+  let badgeText = 'All euribor rates comparable';
   if (!ratesLoading && shouldSwitch && saving > 20) {
     badgeClass =
       'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
-    badgeText = `Switch to ${cheapestTenor}-month tenor`;
+    badgeText = `Switch to ${cheapestTenor}-month euribor rate`;
   } else if (!ratesLoading && shouldSwitch && saving > 5) {
     badgeClass =
       'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
     badgeText = `Marginal benefit to switch to ${cheapestTenor}m`;
   } else if (!ratesLoading && (!shouldSwitch || saving <= 0)) {
     badgeClass = 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
-    badgeText = 'Stay on current tenor';
+    badgeText = 'Stay on current euribor rate';
   }
 
   return (
@@ -148,7 +148,7 @@ export function LoanParameters({
           {/* Right column */}
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Current tenor</Label>
+              <Label className="text-sm font-medium">Current euribor rate</Label>
               <Tabs
                 value={String(activeTenor)}
                 onValueChange={(v) => onTenor(parseInt(v, 10) as 3 | 6 | 12)}
@@ -251,7 +251,7 @@ export function LoanParameters({
                 vs switching to {cheapestTenor}m.
               </>
             ) : (
-              `${activeTenor}m is already the best-priced tenor at current rates.`
+              `${activeTenor}m is already the best-priced euribor rate at current rates.`
             )}
           </p>
           <span

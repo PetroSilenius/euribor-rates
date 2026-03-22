@@ -13,6 +13,7 @@ import {
 import { EuriborChart } from '@/components/EuriborChart';
 import { LoanParameters } from '@/components/LoanParameters';
 import { Card, CardContent } from '@/components/ui/card';
+import { ArrowRightIcon } from '@/components/ui/icons';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchEuriborHistory, periodStart } from '@/lib/euriborHistory';
 import {
@@ -162,7 +163,7 @@ export function MortgageApp() {
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="mb-10">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
-          Tenor Comparison
+          Euribor Rate Comparison
         </h1>
         <p className="text-sm text-muted-foreground">
           See how monthly payments diverge over 24 months across different rate
@@ -296,9 +297,10 @@ export function MortgageApp() {
           </div>
           <a
             href="/"
-            className="shrink-0 inline-flex items-center justify-center rounded-lg bg-foreground text-background text-sm font-medium px-4 py-2 hover:opacity-90 transition-opacity"
+            className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-foreground text-background text-sm font-medium px-4 py-2 hover:opacity-90 transition-opacity"
           >
-            View live rates →
+            <span>View live rates</span>
+            <ArrowRightIcon />
           </a>
         </CardContent>
       </Card>

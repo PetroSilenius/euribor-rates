@@ -18,6 +18,7 @@ import {
   type Period,
   periodStart,
 } from '@/lib/euriborHistory';
+import { ArrowRightIcon } from '@/components/ui/icons';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -334,9 +335,10 @@ export function EuriborOverview() {
           </div>
           <a
             href="/compare"
-            className="shrink-0 inline-flex items-center justify-center rounded-lg bg-foreground text-background text-sm font-medium px-4 py-2 hover:opacity-90 transition-opacity"
+            className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-foreground text-background text-sm font-medium px-4 py-2 hover:opacity-90 transition-opacity"
           >
-            Compare tenors →
+            <span>Compare euribor rates</span>
+            <ArrowRightIcon />
           </a>
         </CardContent>
       </Card>
