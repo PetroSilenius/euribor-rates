@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
+import { ArrowRightIcon } from '@/components/ui/icons';
 import {
   fetchEuriborHistory,
   type HistoricalPoint,
@@ -18,7 +19,6 @@ import {
   type Period,
   periodStart,
 } from '@/lib/euriborHistory';
-import { ArrowRightIcon } from '@/components/ui/icons';
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -241,8 +241,8 @@ export function EuriborOverview() {
         <p className="text-sm text-muted-foreground">
           European interbank offered rates, published daily.
         </p>
-        </div>
-        <div className="mb-10">
+      </div>
+      <div className="mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {TENOR_KEYS.map(([key, label]) => (
             <RateCard

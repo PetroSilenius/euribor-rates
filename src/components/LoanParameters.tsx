@@ -152,7 +152,9 @@ export function LoanParameters({
           {/* Right column */}
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Current euribor rate</Label>
+              <Label className="text-sm font-medium">
+                Current euribor rate
+              </Label>
               <Tabs
                 value={String(activeTenor)}
                 onValueChange={(v) => onTenor(parseInt(v, 10) as 3 | 6 | 12)}
@@ -244,8 +246,7 @@ export function LoanParameters({
                   </>
                 ) : (
                   'Switching covers the fee immediately.'
-                )}
-                {' '}
+                )}{' '}
                 Total over {savingsHorizonMonths} months:{' '}
                 <span className="font-semibold text-foreground">
                   {formatEuro(Math.round(totalSavings))}

@@ -161,7 +161,13 @@ export function MortgageApp() {
     [inputs, scenario],
   );
 
-  const { monthlySaving, totalSavings, savingsHorizonMonths, breakEvenMonths, cheapestTenor } = useMemo(() => {
+  const {
+    monthlySaving,
+    totalSavings,
+    savingsHorizonMonths,
+    breakEvenMonths,
+    cheapestTenor,
+  } = useMemo(() => {
     const tenorPayment = (monthIdx: number, tenor: 3 | 6 | 12) => {
       const point = chartData[monthIdx];
       if (tenor === 3) return point?.payment3m ?? 0;
@@ -171,11 +177,12 @@ export function MortgageApp() {
 
     const months = chartData.length;
     const totalPayment = (tenor: 3 | 6 | 12) =>
-      chartData.reduce((sum, _, monthIdx) => sum + tenorPayment(monthIdx, tenor), 0);
+      chartData.reduce(
+        (sum, _, monthIdx) => sum + tenorPayment(monthIdx, tenor),
+        0,
+      );
     const avgPayment = (tenor: 3 | 6 | 12) =>
-      months > 0
-        ? totalPayment(tenor) / months
-        : 0;
+      months > 0 ? totalPayment(tenor) / months : 0;
 
     const avgByTenor = {
       3: avgPayment(3),
