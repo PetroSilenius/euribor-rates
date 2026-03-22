@@ -1,43 +1,37 @@
-# Astro Starter Kit: Minimal
+# Euribor Rates
 
-```sh
-npm create astro@latest -- --template minimal
+Live Euribor rate tracker and mortgage tenor comparison tool. Data is fetched daily from the Bank of Finland.
+
+**[euribor.petrosilenius.com](https://euribor.petrosilenius.com)**
+
+## Features
+
+**Rates page (`/`)** — current 3m, 6m, and 12m Euribor rates with month-over-month change, and a historical chart with 1M–5Y period selection.
+
+**Compare page (`/compare`)** — mortgage calculator that shows how monthly payments diverge across tenors over 24 months under five rate scenarios (flat, +1% over 12/24 months, −0.5% over 12/24 months). Enter your loan amount, term, bank margin, and switching fee to get a break-even analysis.
+
+## Development
+
+```bash
+npm install
+npm run dev       # localhost:4321
+npm run build
+npm run preview
+npm test
+npm run lint
+npm run lint:fix
+npm run typecheck
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Stack
 
-## 🚀 Project Structure
+- [Astro](https://astro.build) with SSR via `@astrojs/node`
+- React for interactive components
+- Tailwind CSS v4, shadcn/ui
+- Recharts for charts
+- Vitest for unit tests
+- Biome for linting and formatting
 
-Inside of your Astro project, you'll see the following folders and files:
+## Data source
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Euribor rates are proxied from the [Bank of Finland XML API](https://www.suomenpankki.fi/fi/tilastot/taulukot-ja-kuviot/korot/kuviot/korot_kuviot/euriborkorot_pv_chrt_fi/) via `/api/euribor`, cached for 1 hour.
