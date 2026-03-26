@@ -2,7 +2,7 @@
 
 Live Euribor rate tracker and mortgage tenor comparison tool. Data is fetched daily from the Bank of Finland.
 
-**[euribor.petrosilenius.com](https://euribor.petrosilenius.com)**
+**[euribordata.com](https://euribordata.com)**
 
 ## Features
 
