@@ -236,15 +236,17 @@ export function MortgageApp() {
           onValueChange={(v) => setScenario(v as Scenario)}
           className="mb-4"
         >
-          <TabsList>
-            {(
-              ['flat', 'rise12', 'rise24', 'fall12', 'fall24'] as Scenario[]
-            ).map((s) => (
-              <TabsTrigger key={s} value={s} className="px-4">
-                {SCENARIO_LABELS[s]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList>
+              {(
+                ['flat', 'rise12', 'rise24', 'fall12', 'fall24'] as Scenario[]
+              ).map((s) => (
+                <TabsTrigger key={s} value={s} className="px-4">
+                  {SCENARIO_LABELS[s]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </Tabs>
 
         <div className="h-[360px] w-full">

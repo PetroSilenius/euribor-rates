@@ -225,7 +225,7 @@ export function LoanParameters({
         </div>
 
         {/* Break-even row */}
-        <div className="mt-6 pt-5 border-t flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="mt-6 pt-5 border-t flex flex-col sm:flex-row sm:items-center gap-3 min-h-[4.5rem]">
           <p className="text-sm text-muted-foreground flex-1">
             {ratesLoading ? (
               <span className="inline-block h-4 w-64 rounded bg-muted animate-pulse" />
