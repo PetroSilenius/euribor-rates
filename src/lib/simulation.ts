@@ -172,20 +172,12 @@ export function computeSimulatedRates(
   const PTS_PER_MONTH = 10;
   return Array.from({ length: 24 * PTS_PER_MONTH }, (_, i) => {
     const t = i / PTS_PER_MONTH;
-    const month = Math.floor(t);
-    const lastReset = (tenor: 3 | 6 | 12) =>
-      [...RESET_SCHEDULES[tenor]].reverse().find((r) => r <= month) ?? 0;
     return {
       t,
-      rate3m:
-        (rates[3] + euriborDelta(scenario, lastReset(3)) + rateNoise(t, 3)) *
-        100,
-      rate6m:
-        (rates[6] + euriborDelta(scenario, lastReset(6)) + rateNoise(t, 6)) *
-        100,
+      rate3m: (rates[3] + euriborDelta(scenario, t) + rateNoise(t, 3)) * 100,
+      rate6m: (rates[6] + euriborDelta(scenario, t) + rateNoise(t, 6)) * 100,
       rate12m:
-        (rates[12] + euriborDelta(scenario, lastReset(12)) + rateNoise(t, 12)) *
-        100,
+        (rates[12] + euriborDelta(scenario, t) + rateNoise(t, 12)) * 100,
     };
   });
 }
