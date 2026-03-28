@@ -452,9 +452,6 @@ export function EuriborOverview() {
         </div>
       </div>
 
-      {/* 30-day rates table */}
-      <RatesTable data={allData} loading={status === 'loading'} />
-
       {/* CTA to compare page */}
       <Card className="mt-10">
         <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 py-5">
@@ -476,6 +473,9 @@ export function EuriborOverview() {
           </a>
         </CardContent>
       </Card>
+
+      {/* 30-day rates table */}
+      <RatesTable data={allData} loading={status === 'loading'} />
 
       <p className="text-xs text-muted-foreground mt-6">
         Not financial advice. Source:{' '}
