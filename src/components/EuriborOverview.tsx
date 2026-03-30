@@ -174,6 +174,112 @@ function RateCard({
   );
 }
 
+// ─── Rates table ────────────────────────────────────────────────────────────────
+
+function RatesTable({
+  data,
+  loading,
+}: {
+  data: HistoricalPoint[];
+  loading: boolean;
+}) {
+  const cutoff = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  // Newest-first rows for the last 30 calendar days
+  const rows = data.filter((p) => p.date >= cutoff).reverse();
+
+  function fmtTableDate(date: string): string {
+    return parseDay(date).toLocaleDateString('fi-FI', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  function fmtRate(rate: number | null): string {
+    if (rate == null) return '—';
+    return rate.toLocaleString('fi-FI', {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    });
+  }
+
+  const skeletonRows = 8;
+
+  return (
+    <div className="mt-10">
+      <h2 className="text-base font-medium mb-4">Previous 30 days</h2>
+      <Card>
+        <CardContent className="p-0 overflow-hidden rounded-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                    Date
+                  </th>
+                  {TENOR_KEYS.map(([key, label]) => (
+                    <th
+                      key={key}
+                      className="px-4 py-3 text-right font-medium text-muted-foreground"
+                    >
+                      <span className="inline-flex items-center justify-end gap-1.5">
+                        <span
+                          className="inline-block size-2 rounded-full shrink-0"
+                          style={{ background: COLORS[key] }}
+                        />
+                        {label}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading
+                  ? Array.from({ length: skeletonRows }).map((_, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: skeleton rows
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="px-4 py-3">
+                          <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                        </td>
+                        {TENOR_KEYS.map(([key]) => (
+                          <td key={key} className="px-4 py-3 text-right">
+                            <div className="h-4 w-14 rounded bg-muted animate-pulse ml-auto" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  : rows.map((row) => (
+                      <tr
+                        key={row.date}
+                        className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="px-4 py-3 font-medium">
+                          {fmtTableDate(row.date)}
+                        </td>
+                        {TENOR_KEYS.map(([key]) => (
+                          <td
+                            key={key}
+                            className="px-4 py-3 text-right tabular-nums text-foreground"
+                          >
+                            {fmtRate(row[key])}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main component ─────────────────────────────────────────────────────────────
 
 export function EuriborOverview() {
@@ -367,6 +473,9 @@ export function EuriborOverview() {
           </a>
         </CardContent>
       </Card>
+
+      {/* 30-day rates table */}
+      <RatesTable data={allData} loading={status === 'loading'} />
 
       <p className="text-xs text-muted-foreground mt-6">
         Not financial advice. Source:{' '}
