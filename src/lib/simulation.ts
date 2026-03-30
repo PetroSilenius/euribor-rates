@@ -176,8 +176,7 @@ export function computeSimulatedRates(
       t,
       rate3m: (rates[3] + euriborDelta(scenario, t) + rateNoise(t, 3)) * 100,
       rate6m: (rates[6] + euriborDelta(scenario, t) + rateNoise(t, 6)) * 100,
-      rate12m:
-        (rates[12] + euriborDelta(scenario, t) + rateNoise(t, 12)) * 100,
+      rate12m: (rates[12] + euriborDelta(scenario, t) + rateNoise(t, 12)) * 100,
     };
   });
 }
