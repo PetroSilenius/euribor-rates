@@ -8,7 +8,11 @@ Live Euribor rate tracker and mortgage tenor comparison tool. Data is fetched da
 
 **Rates page (`/`)** — current 3m, 6m, and 12m Euribor rates with month-over-month change, and a historical chart with 1M–5Y period selection.
 
+![Euribor rates page](docs/screenshots/euribor-rates-etusivu.png)
+
 **Compare page (`/compare`)** — mortgage calculator that shows how monthly payments diverge across tenors over 24 months under five rate scenarios (flat, +1% over 12/24 months, −0.5% over 12/24 months). Enter your loan amount, term, bank margin, and switching fee to get a break-even analysis.
+
+![Euribor rate comparison page](docs/screenshots/euribor-rates-compare.png)
 
 ## Development
 
