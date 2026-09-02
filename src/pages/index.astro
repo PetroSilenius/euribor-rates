@@ -2,12 +2,30 @@
 import { EuriborOverview } from '@/components/EuriborOverview';
 import Layout from '@/layouts/Layout.astro';
 import '@/styles/global.css';
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Euribor Rates',
+  url: 'https://euribordata.com/',
+  description:
+    'Current and historical Euribor interest rates for 3, 6 and 12 month euribor rates. Daily data from the Bank of Finland.',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Any',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'EUR',
+  },
+};
 ---
 
 <Layout
   canonicalPath="/"
   title="Euribor Rates Today — 3m, 6m, 12m"
   description="Current and historical Euribor interest rates for 3, 6 and 12 month euribor rates. Daily data from the Bank of Finland."
+  ogImage="/og-home.png"
+  structuredData={structuredData}
 >
   <EuriborOverview client:load />
 </Layout>
