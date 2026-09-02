@@ -2,12 +2,30 @@
 import { MortgageApp } from '@/components/MortgageApp';
 import Layout from '@/layouts/Layout.astro';
 import '@/styles/global.css';
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'Euribor Mortgage Comparison',
+  url: 'https://euribordata.com/compare',
+  description:
+    'Compare 3, 6 and 12 month Euribor mortgage payments over 24 months. See how rates hold, rise or fall affects your monthly payment and when switching euribor rate pays off.',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Any',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'EUR',
+  },
+};
 ---
 
 <Layout
   canonicalPath="/compare"
   title="Euribor Rate Comparison — 3m vs 6m vs 12m Mortgage Calculator"
   description="Compare 3, 6 and 12 month Euribor mortgage payments over 24 months. See how rates hold, rise or fall affects your monthly payment and when switching euribor rate pays off."
+  ogImage="/og-compare.png"
+  structuredData={structuredData}
 >
   <MortgageApp client:load />
 </Layout>
