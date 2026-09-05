@@ -17,7 +17,96 @@ export interface PaymentRow {
   diffAnnual: number; // diffMonthly * 12
 }
 
-export type Scenario = 'flat' | 'rise12' | 'rise24' | 'fall12' | 'fall24';
+export const RATE_PATH_SCENARIOS = [
+  'flat',
+  'rise12',
+  'rise24',
+  'fall12',
+  'fall24',
+] as const;
+
+export const HYPOTHETICAL_SCENARIOS = [
+  'iranEscalation',
+  'equityCrash',
+  'energyShock',
+  'tradeWar',
+  'aiBoom',
+  'sovereignStress',
+] as const;
+
+export type RatePathScenario = (typeof RATE_PATH_SCENARIOS)[number];
+export type HypotheticalScenario = (typeof HYPOTHETICAL_SCENARIOS)[number];
+export type Scenario = RatePathScenario | HypotheticalScenario;
+
+export function isHypotheticalScenario(
+  scenario: Scenario,
+): scenario is HypotheticalScenario {
+  return (HYPOTHETICAL_SCENARIOS as readonly string[]).includes(scenario);
+}
+
+/** AI-generated narrative scenarios. The rate paths are illustrative guesses at
+ *  how each story might transmit into Euribor — not forecasts, and not sourced
+ *  from any economic model. */
+export interface HypotheticalCase {
+  id: HypotheticalScenario;
+  label: string; // short tab label
+  headline: string; // the event itself
+  transmission: string; // why Euribor moves the way it does
+}
+
+export const HYPOTHETICAL_CASES: Record<
+  HypotheticalScenario,
+  HypotheticalCase
+> = {
+  iranEscalation: {
+    id: 'iranEscalation',
+    label: 'US–Iran war drags on',
+    headline:
+      'The US campaign against Iran grinds into a second year, with Hormuz shipping disrupted on and off.',
+    transmission:
+      'Oil and freight costs stay elevated, headline inflation reaccelerates, and the ECB keeps policy restrictive well past the point markets had priced in. Euribor drifts up ~0.85pp before easing back as the shock fades.',
+  },
+  equityCrash: {
+    id: 'equityCrash',
+    label: 'Stock markets crash',
+    headline:
+      'A disorderly repricing wipes ~35% off global equities over a single quarter.',
+    transmission:
+      'A brief interbank funding squeeze nudges rates up, then a growth and credit shock forces the ECB into rapid, deep cuts. Euribor ends ~1.1pp lower.',
+  },
+  energyShock: {
+    id: 'energyShock',
+    label: 'Energy shock',
+    headline:
+      'Remaining Russian gas flows stop and an LNG outage hits during a cold winter.',
+    transmission:
+      'A 2022-style cost-push spike pushes euro-area inflation back above target, and the ECB hikes hard to keep expectations anchored. Euribor peaks ~1.6pp higher around month 14.',
+  },
+  tradeWar: {
+    id: 'tradeWar',
+    label: 'Tariff spiral',
+    headline:
+      'Tit-for-tat tariffs between the US, EU and China escalate across most goods categories.',
+    transmission:
+      'Classic stagflation bind: import prices lift inflation first, so the ECB holds, then collapsing export demand dominates and cuts follow. Euribor rises modestly, then ends ~0.55pp lower.',
+  },
+  aiBoom: {
+    id: 'aiBoom',
+    label: 'AI productivity boom',
+    headline:
+      'AI adoption lifts euro-area productivity growth by roughly a percentage point a year.',
+    transmission:
+      'Disinflationary on the price side, but stronger growth and heavy capex raise the neutral rate. The ECB normalises gently upward — a slow, steady ~0.6pp climb.',
+  },
+  sovereignStress: {
+    id: 'sovereignStress',
+    label: 'Eurozone debt stress',
+    headline:
+      'A budget crisis in a large member state blows out sovereign spreads and revives fragmentation fears.',
+    transmission:
+      'Bank funding costs and interbank risk premia jump, lifting Euribor above policy rates. An ECB backstop eventually restores calm and most of the spike unwinds.',
+  },
+};
 
 export interface MonthlyPoint {
   month: number; // 0–23
@@ -90,13 +179,91 @@ const RESET_SCHEDULES: Record<3 | 6 | 12, number[]> = {
   12: [0, 12],
 };
 
+/** [month, Euribor delta in decimal] — linearly interpolated between frames,
+ *  clamped to the first/last frame outside the covered range. */
+type Keyframe = readonly [month: number, delta: number];
+
+const SCENARIO_KEYFRAMES: Record<Scenario, readonly Keyframe[]> = {
+  // Existing rate paths, expressed as keyframes (behaviour unchanged).
+  flat: [[0, 0]],
+  rise12: [
+    [0, 0],
+    [11, 0.01],
+  ],
+  rise24: [
+    [0, 0],
+    [23, 0.01],
+  ],
+  fall12: [
+    [0, 0],
+    [11, -0.005],
+  ],
+  fall24: [
+    [0, 0],
+    [23, -0.005],
+  ],
+
+  // Hypothetical cases — illustrative rate paths, see HYPOTHETICAL_CASES below.
+  iranEscalation: [
+    [0, 0],
+    [3, 0.002],
+    [9, 0.0075],
+    [15, 0.0085],
+    [23, 0.0055],
+  ],
+  equityCrash: [
+    [0, 0],
+    [1, 0.0015],
+    [4, -0.0025],
+    [10, -0.009],
+    [17, -0.0125],
+    [23, -0.011],
+  ],
+  energyShock: [
+    [0, 0],
+    [2, 0.0035],
+    [8, 0.013],
+    [14, 0.016],
+    [23, 0.0115],
+  ],
+  tradeWar: [
+    [0, 0],
+    [5, 0.0035],
+    [11, 0.0025],
+    [18, -0.003],
+    [23, -0.0055],
+  ],
+  aiBoom: [
+    [0, 0],
+    [6, 0.002],
+    [14, 0.0045],
+    [23, 0.006],
+  ],
+  sovereignStress: [
+    [0, 0],
+    [3, 0.0045],
+    [7, 0.009],
+    [12, 0.006],
+    [23, 0.003],
+  ],
+};
+
 function euriborDelta(scenario: Scenario, month: number): number {
-  if (scenario === 'flat') return 0;
-  if (scenario === 'rise12') return (Math.min(month, 11) / 11) * 0.01;
-  if (scenario === 'rise24') return (month / 23) * 0.01;
-  if (scenario === 'fall12') return (Math.min(month, 11) / 11) * -0.005;
-  if (scenario === 'fall24') return (month / 23) * -0.005;
-  return 0;
+  const frames = SCENARIO_KEYFRAMES[scenario] ?? SCENARIO_KEYFRAMES.flat;
+  const first = frames[0];
+  if (month <= first[0]) return first[1];
+
+  for (let i = 1; i < frames.length; i++) {
+    const [frameMonth, delta] = frames[i];
+    if (month <= frameMonth) {
+      const [prevMonth, prevDelta] = frames[i - 1];
+      const span = frameMonth - prevMonth;
+      if (span === 0) return delta;
+      return prevDelta + ((month - prevMonth) / span) * (delta - prevDelta);
+    }
+  }
+
+  return frames[frames.length - 1][1];
 }
 
 function tenorRate(

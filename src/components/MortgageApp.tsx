@@ -19,13 +19,18 @@ import { fetchEuriborHistory, periodStart } from '@/lib/euriborHistory';
 import {
   computeScenario,
   computeSimulatedRates,
+  HYPOTHETICAL_CASES,
+  HYPOTHETICAL_SCENARIOS,
+  isHypotheticalScenario,
+  RATE_PATH_SCENARIOS,
+  type RatePathScenario,
   type Scenario,
   type SimulationInputs,
 } from '@/lib/simulation';
 
 // ─── Config ─────────────────────────────────────────────────────────────────────
 
-const SCENARIO_LABELS: Record<Scenario, string> = {
+const SCENARIO_LABELS: Record<RatePathScenario, string> = {
   flat: 'Rates hold',
   rise12: '+1% over 12 months',
   rise24: '+1% over 24 months',
@@ -217,6 +222,10 @@ export function MortgageApp() {
     ? parseInt(nextResetMonths, 10)
     : undefined;
 
+  const activeCase = isHypotheticalScenario(scenario)
+    ? HYPOTHETICAL_CASES[scenario]
+    : null;
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="mb-10">
@@ -231,23 +240,60 @@ export function MortgageApp() {
 
       {/* Scenario tabs + payment chart */}
       <section>
-        <Tabs
-          value={scenario}
-          onValueChange={(v) => setScenario(v as Scenario)}
-          className="mb-4"
-        >
-          <div className="overflow-x-auto">
-            <TabsList>
-              {(
-                ['flat', 'rise12', 'rise24', 'fall12', 'fall24'] as Scenario[]
-              ).map((s) => (
-                <TabsTrigger key={s} value={s} className="px-4">
-                  {SCENARIO_LABELS[s]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+        <div className="mb-4 space-y-3">
+          <Tabs
+            value={scenario}
+            onValueChange={(v) => setScenario(v as Scenario)}
+          >
+            <div className="overflow-x-auto">
+              <TabsList>
+                {RATE_PATH_SCENARIOS.map((s) => (
+                  <TabsTrigger key={s} value={s} className="px-4">
+                    {SCENARIO_LABELS[s]}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+          </Tabs>
+
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">
+              Hypothetical cases{' '}
+              <span className="text-[10px] uppercase tracking-wide border rounded px-1 py-0.5 ml-1 align-middle">
+                AI-generated
+              </span>
+            </p>
+            <Tabs
+              value={scenario}
+              onValueChange={(v) => setScenario(v as Scenario)}
+            >
+              <div className="overflow-x-auto">
+                <TabsList>
+                  {HYPOTHETICAL_SCENARIOS.map((s) => (
+                    <TabsTrigger key={s} value={s} className="px-4">
+                      {HYPOTHETICAL_CASES[s].label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+            </Tabs>
           </div>
-        </Tabs>
+        </div>
+
+        {activeCase && (
+          <Card className="mb-4 border-dashed">
+            <CardContent className="py-4 space-y-1.5">
+              <p className="text-sm font-medium">{activeCase.headline}</p>
+              <p className="text-sm text-muted-foreground">
+                {activeCase.transmission}
+              </p>
+              <p className="text-xs text-muted-foreground pt-1">
+                AI-generated illustration. Not a forecast, and not derived from
+                any economic model.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="h-[360px] w-full">
           {liveRates == null ? (
