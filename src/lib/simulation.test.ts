@@ -5,6 +5,10 @@ import {
   computeScenario,
   computeSimulatedRates,
   EURIBOR_RATES,
+  HYPOTHETICAL_CASES,
+  HYPOTHETICAL_SCENARIOS,
+  isHypotheticalScenario,
+  RATE_PATH_SCENARIOS,
   type SimulationInputs,
 } from './simulation';
 
@@ -249,5 +253,129 @@ describe('computeSimulatedRates', () => {
       expect(p.rate6m).toBeGreaterThan(4);
       expect(p.rate12m).toBeGreaterThan(4);
     });
+  });
+});
+
+describe('hypothetical cases', () => {
+  const inputs: SimulationInputs = {
+    loanAmount: 250_000,
+    termMonths: 240,
+    marginDecimal: 0.0055,
+    currentTenor: 12,
+  };
+
+  /** Mean 3m rate (percentage points) over the month containing `month`. */
+  const rate3mAt = (
+    scenario: (typeof HYPOTHETICAL_SCENARIOS)[number] | 'flat',
+    month: number,
+  ) => {
+    const pts = computeSimulatedRates(inputs, scenario);
+    const window = pts.slice(month * 10, month * 10 + 10);
+    return window.reduce((s, p) => s + p.rate3m, 0) / window.length;
+  };
+
+  it('every hypothetical scenario has case metadata', () => {
+    HYPOTHETICAL_SCENARIOS.forEach((id) => {
+      const c = HYPOTHETICAL_CASES[id];
+      expect(c.id).toBe(id);
+      expect(c.label.length).toBeGreaterThan(0);
+      expect(c.headline.length).toBeGreaterThan(0);
+      expect(c.transmission.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('isHypotheticalScenario separates the two scenario families', () => {
+    HYPOTHETICAL_SCENARIOS.forEach((id) => {
+      expect(isHypotheticalScenario(id)).toBe(true);
+    });
+    RATE_PATH_SCENARIOS.forEach((id) => {
+      expect(isHypotheticalScenario(id)).toBe(false);
+    });
+  });
+
+  it('every hypothetical scenario produces 24 payment points for all tenors', () => {
+    HYPOTHETICAL_SCENARIOS.forEach((id) => {
+      const points = computeScenario(inputs, id);
+      expect(points).toHaveLength(24);
+      points.forEach((p) => {
+        expect(p.payment3m).toBeGreaterThan(0);
+        expect(p.payment6m).toBeGreaterThan(0);
+        expect(p.payment12m).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  it('every hypothetical scenario starts at the live rate (delta 0 at t=0)', () => {
+    const flatStart = computeSimulatedRates(inputs, 'flat')[0].rate3m;
+    HYPOTHETICAL_SCENARIOS.forEach((id) => {
+      expect(computeSimulatedRates(inputs, id)[0].rate3m).toBeCloseTo(
+        flatStart,
+        8,
+      );
+    });
+  });
+
+  it('equityCrash: rates end well below where they started', () => {
+    expect(rate3mAt('equityCrash', 23)).toBeLessThan(
+      rate3mAt('equityCrash', 0) - 0.9,
+    );
+  });
+
+  it('equityCrash: brief funding-stress bump before the cuts', () => {
+    expect(rate3mAt('equityCrash', 1)).toBeGreaterThan(
+      rate3mAt('equityCrash', 0),
+    );
+    expect(rate3mAt('equityCrash', 10)).toBeLessThan(
+      rate3mAt('equityCrash', 1),
+    );
+  });
+
+  it('energyShock: peaks around month 14, then partially retraces', () => {
+    const peak = rate3mAt('energyShock', 14);
+    expect(peak).toBeGreaterThan(rate3mAt('energyShock', 0) + 1.4);
+    expect(rate3mAt('energyShock', 23)).toBeLessThan(peak);
+  });
+
+  it('iranEscalation: rises into mid-horizon, then eases back', () => {
+    const start = rate3mAt('iranEscalation', 0);
+    const peak = rate3mAt('iranEscalation', 15);
+    expect(peak).toBeGreaterThan(start);
+    expect(rate3mAt('iranEscalation', 23)).toBeLessThan(peak);
+    expect(rate3mAt('iranEscalation', 23)).toBeGreaterThan(start);
+  });
+
+  it('tradeWar: rises first, then ends below the start (stagflation flip)', () => {
+    const start = rate3mAt('tradeWar', 0);
+    expect(rate3mAt('tradeWar', 5)).toBeGreaterThan(start);
+    expect(rate3mAt('tradeWar', 23)).toBeLessThan(start);
+  });
+
+  it('aiBoom: monotonically drifting upward', () => {
+    expect(rate3mAt('aiBoom', 6)).toBeGreaterThan(rate3mAt('aiBoom', 0));
+    expect(rate3mAt('aiBoom', 14)).toBeGreaterThan(rate3mAt('aiBoom', 6));
+    expect(rate3mAt('aiBoom', 23)).toBeGreaterThan(rate3mAt('aiBoom', 14));
+  });
+
+  it('sovereignStress: spikes early, then unwinds after the backstop', () => {
+    const peak = rate3mAt('sovereignStress', 7);
+    expect(peak).toBeGreaterThan(rate3mAt('sovereignStress', 0));
+    expect(rate3mAt('sovereignStress', 23)).toBeLessThan(peak);
+  });
+
+  it('rising cases push 3m payments up, falling cases push them down', () => {
+    const flatTotal = computeScenario(inputs, 'flat').reduce(
+      (s, p) => s + p.payment3m,
+      0,
+    );
+    const shockTotal = computeScenario(inputs, 'energyShock').reduce(
+      (s, p) => s + p.payment3m,
+      0,
+    );
+    const crashTotal = computeScenario(inputs, 'equityCrash').reduce(
+      (s, p) => s + p.payment3m,
+      0,
+    );
+    expect(shockTotal).toBeGreaterThan(flatTotal);
+    expect(crashTotal).toBeLessThan(flatTotal);
   });
 });
