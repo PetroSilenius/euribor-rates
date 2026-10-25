@@ -44,7 +44,7 @@
     "@astrojs/check": "^0.9.10",
     "@biomejs/biome": "^2.5.11",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11",
+    "vitest": "^4.1.12",
     "wrangler": "^4.128.0"
   }
 }
